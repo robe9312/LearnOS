@@ -64,7 +64,17 @@ export default function Dashboard() {
 
       const data = await response.json();
       
-      setGeneratedPath(data);
+      // Ensure the generated data matches the structure expected by the UI
+      const formattedData = {
+        ...data,
+        name: data.topic, // UI expects `name`
+        modules: data.modules.map((m: any) => ({
+          ...m,
+          status: 'current' // Add default status for modules
+        }))
+      };
+      
+      setGeneratedPath(formattedData);
       setTopic('');
     } catch (err: any) {
       console.error("Generation Error:", err);
