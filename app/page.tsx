@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { CURRICULUM_PROMPT } from '@/lib/ai/tutor';
 
 // --- Mock Data ---
@@ -37,7 +36,6 @@ const ACTIVE_PATH = {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showChat, setShowChat] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -49,32 +47,39 @@ export default function Dashboard() {
 
     setIsGenerating(true);
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("Gemini API key is missing. Please set NEXT_PUBLIC_GEMINI_API_KEY in settings.");
-      }
-
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash",
-        generationConfig: { responseMimeType: "application/json" }
-      });
-
       const prompt = CURRICULUM_PROMPT
         .replace("{topic}", topic)
         .replace("{level}", 'principiante')
         .replace("{goal}", 'General mastery');
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const responseText = response.text();
-      const data = JSON.parse(responseText);
+      const response = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate curriculum.");
+      }
+
+      const data = await response.json();
       
       setGeneratedPath(data);
       setTopic('');
     } catch (err: any) {
-      console.error(err);
-      alert(err?.message || "Failed to generate curriculum");
+      console.error("Generation Error:", err);
+      let errorMessage = "Failed to generate curriculum.";
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && typeof err === 'object') {
+        // If it's a DOM event or other object, try to find a meaningful property
+        errorMessage = err.message || err.statusText || JSON.stringify(err) || "An unknown error occurred.";
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -87,14 +92,6 @@ export default function Dashboard() {
       {/* Top Navigation Bar */}
       <nav className="h-16 border-b border-white/10 flex items-center justify-between px-4 md:px-8 shrink-0 glass z-50">
         <div className="flex items-center gap-3">
-          {isMobile && (
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors"
-            >
-              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          )}
           <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
             <Brain className="text-white" size={18} />
           </div>
@@ -118,68 +115,45 @@ export default function Dashboard() {
 
       <main className="flex-1 flex overflow-hidden relative">
         
-        {/* Sidebar Left */}
-        <AnimatePresence>
-          {(isSidebarOpen || !isMobile) && (
-            <motion.aside 
-              initial={isMobile ? { x: -256 } : false}
-              animate={{ x: 0 }}
-              exit={{ x: -256 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={cn(
-                "w-64 border-r border-white/5 p-6 flex flex-col gap-8 shrink-0 bg-slate-950/50 z-40",
-                isMobile && "fixed inset-y-0 left-0 top-16 shadow-2xl bg-slate-950"
-              )}
-            >
-              <div>
-                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Current Path</h3>
-                <ul className="space-y-1">
-                  <SidebarLink icon={<Target size={14} />} label={displayPath.name || displayPath.topic} active={activeTab === 'overview'} onClick={() => { setActiveTab('overview'); if (isMobile) setIsSidebarOpen(false); }} />
-                  <SidebarLink icon={<MapIcon size={14} />} label="Skill Graph" active={activeTab === 'graph'} onClick={() => { setActiveTab('graph'); if (isMobile) setIsSidebarOpen(false); }} />
-                  <SidebarLink icon={<BookOpen size={14} />} label="Library" active={activeTab === 'library'} onClick={() => { setActiveTab('library'); if (isMobile) setIsSidebarOpen(false); }} />
-                  <SidebarLink icon={<BarChart2 size={14} />} label="Analytics" active={activeTab === 'analytics'} onClick={() => { setActiveTab('analytics'); if (isMobile) setIsSidebarOpen(false); }} />
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">System Health</h3>
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-[10px] font-mono text-slate-500 uppercase">
-                      <span>Skill Mastery</span>
-                      <span>68%</span>
-                    </div>
-                    <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: '68%' }} className="h-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
-                    </div>
+        {/* Sidebar Left (Desktop Only) */}
+        {!isMobile && (
+          <aside className="w-64 border-r border-white/5 p-6 flex flex-col gap-8 shrink-0 bg-slate-950/50 z-40">
+            <div>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Current Path</h3>
+              <ul className="space-y-1">
+                <SidebarLink icon={<Target size={14} />} label={displayPath.name || displayPath.topic} active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                <SidebarLink icon={<MapIcon size={14} />} label="Skill Graph" active={activeTab === 'graph'} onClick={() => setActiveTab('graph')} />
+                <SidebarLink icon={<BookOpen size={14} />} label="Library" active={activeTab === 'library'} onClick={() => setActiveTab('library')} />
+                <SidebarLink icon={<BarChart2 size={14} />} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
+              </ul>
+            </div>
+            {/* System Health Section */}
+            <div>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">System Health</h3>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[10px] font-mono text-slate-500 uppercase">
+                    <span>Skill Mastery</span>
+                    <span>68%</span>
+                  </div>
+                  <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: '68%' }} className="h-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
                   </div>
                 </div>
               </div>
-
-              <div className="mt-auto">
-                <div className="p-4 rounded-xl bg-slate-900 border border-white/5 space-y-2">
-                  <p className="text-[10px] text-slate-400 leading-relaxed uppercase tracking-tighter">
-                    Routing: <span className="text-sky-400 font-bold">S1</span>
-                  </p>
-                </div>
+            </div>
+            <div className="mt-auto">
+              <div className="p-4 rounded-xl bg-slate-900 border border-white/5 space-y-2">
+                <p className="text-[10px] text-slate-400 leading-relaxed uppercase tracking-tighter">
+                  Routing: <span className="text-sky-400 font-bold">S1</span>
+                </p>
               </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
-
-        {/* Backdrop for mobile */}
-        {isMobile && isSidebarOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 top-16"
-          />
+            </div>
+          </aside>
         )}
 
         {/* Center Pane */}
-        <section className="flex-1 relative grid-bg overflow-hidden flex flex-col p-4 md:p-8">
+        <section className="flex-1 relative grid-bg overflow-y-auto flex flex-col p-4 md:p-8">
           <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
             <div className="min-w-0 flex-1">
               <h1 className="text-xl md:text-2xl font-semibold text-white tracking-tight font-display mb-1 truncate">
@@ -209,7 +183,7 @@ export default function Dashboard() {
             </form>
           </header>
 
-          <div className="flex-1 flex flex-col gap-6 overflow-y-auto pb-24 lg:pb-0">
+          <div className="flex-1 flex flex-col gap-6 pb-24 lg:pb-0">
             <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 md:p-6 relative overflow-hidden backdrop-blur-sm shrink-0">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="bg-sky-500/20 text-sky-400 text-[8px] md:text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded italic">
@@ -306,14 +280,14 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Mobile Floating Trigger for Chat */}
-        {isMobile && !showChat && (
-          <button 
-            onClick={() => setShowChat(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-sky-500 text-white rounded-full flex items-center justify-center shadow-xl shadow-sky-500/40 z-[45] animate-in zoom-in duration-300"
-          >
-            <MessageSquare size={24} />
-          </button>
+        {/* Mobile Bottom Navigation */}
+        {isMobile && (
+          <div className="fixed bottom-0 left-0 right-0 h-16 bg-slate-950 border-t border-white/10 flex justify-around items-center px-4 z-50">
+            <button onClick={() => setActiveTab('overview')} className={cn("p-2", activeTab === 'overview' ? 'text-sky-400' : 'text-slate-500')}><Target size={20}/></button>
+            <button onClick={() => setActiveTab('graph')} className={cn("p-2", activeTab === 'graph' ? 'text-sky-400' : 'text-slate-500')}><MapIcon size={20}/></button>
+            <button onClick={() => setActiveTab('library')} className={cn("p-2", activeTab === 'library' ? 'text-sky-400' : 'text-slate-500')}><BookOpen size={20}/></button>
+            <button onClick={() => setShowChat(!showChat)} className={cn("p-2", showChat ? 'text-sky-400' : 'text-slate-500')}><MessageSquare size={20}/></button>
+          </div>
         )}
       </main>
 
