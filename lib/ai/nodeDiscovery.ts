@@ -4,8 +4,20 @@ import { db } from "../db";
 import { skillNodes, nodeConnections } from "../../src/db/schema";
 import { eq, sql } from "drizzle-orm";
 
-const google = createGoogleGenerativeAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
-const embeddingModel = google.embedding('text-embedding-004');
+let googleClient: any = null;
+
+function getGoogleClient() {
+  if (!googleClient) {
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('NEXT_PUBLIC_GEMINI_API_KEY environment variable is required');
+    }
+    googleClient = createGoogleGenerativeAI({ apiKey });
+  }
+  return googleClient;
+}
+
+const embeddingModel = getGoogleClient().embedding('text-embedding-004');
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   const { embedding } = await embed({
