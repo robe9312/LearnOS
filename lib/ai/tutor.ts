@@ -1,8 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 /**
  * Prompt para el Curriculum Generator Universal.
- * Diseñado para actuar como el "Cerebro Pedagógico" capaz de estructurar rutas para cualquier tema.
  */
 export const CURRICULUM_PROMPT = `
 Eres un experto pedagogo con doctorado en educación e ingeniero senior en el tema solicitado. 
@@ -62,5 +61,5 @@ export function getGeminiTutor() {
   if (!apiKey) {
     throw new Error("NEXT_PUBLIC_GEMINI_API_KEY is missing");
   }
-  return new GoogleGenerativeAI(apiKey);
+  return new GoogleGenAI({ apiKey });
 }
