@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { analyzeAndImprove } from '@/lib/ai/self-improvement';
 import { db } from '@/lib/db';
 import { improvements } from '@/src/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,14 +85,12 @@ export async function GET(request: NextRequest) {
     const query = db
       .select()
       .from(improvements)
-      .where(eq(improvements.userId, userId))
-      .orderBy(improvements.appliedAt);
-
-    if (noteId) {
-      // Note: eq(improvements.sourceNoteId, noteId) should be added
-      // However the query builder requires chaining.
-      // Modifying to ensure valid drizzle query
-    }
+      .where(
+        noteId
+          ? and(eq(improvements.userId, userId), eq(improvements.sourceNoteId, noteId as string))
+          : eq(improvements.userId, userId)
+      )
+      .orderBy(desc(improvements.appliedAt));
 
     const history = await query.limit(limit);
 

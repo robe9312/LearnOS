@@ -48,7 +48,17 @@ export async function analyzeAndImprove(userId: string, content: string, context
     config: { responseMimeType: "application/json" }
   });
 
-  const result = JSON.parse(response.text || "{}");
+  let result;
+  try {
+    result = JSON.parse(response.text || "{}");
+  } catch (parseError) {
+    console.error('[self-improvement] JSON parse failed:', parseError);
+    result = {
+      analysis: "No se pudo generar análisis. Intenta de nuevo.",
+      suggestions: [],
+      nextSteps: ["Revisa la claridad de tu solicitud"]
+    };
+  }
 
   // 4. Registrar patrón de aprendizaje
   await db.insert(learningPatterns).values({
