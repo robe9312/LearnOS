@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useUser } from "@clerk/nextjs"
+import { useSession } from "next-auth/react"
 import { onboarding, curriculum } from "@/lib/api"
 
 const STEPS = ["objetivo", "nivel", "tiempo"] as const
@@ -18,7 +18,8 @@ const HOURS = [2, 5, 10, 15, 20]
 
 export default function OnboardingPage() {
   const router  = useRouter()
-  const { user } = useUser()
+  const { data: session } = useSession()
+  const user = session?.user
 
   const [step,       setStep]       = useState<Step>("objetivo")
   const [goal,       setGoal]       = useState("")
@@ -52,20 +53,20 @@ export default function OnboardingPage() {
     try {
       await onboarding.start({
         user_id:              user.id,
-        display_name:         user.fullName ?? user.username ?? "Estudiante",
+        display_name:         user.name ?? "Estudiante",
         language:             "es",
         hours_per_week:       hours,
         goal_description:     goal,
         self_assessed_level:  level as any,
-      })
+      }, user.id!)
 
       await curriculum.generate({
-        user_id:       user.id,
+        user_id:       user.id!,
         topic:         goal,
         level:         level as any,
         hours_per_week: hours,
         language:      "es",
-      })
+      }, user.id!)
 
       router.push("/dashboard")
     } catch (e: any) {
@@ -76,15 +77,15 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div id="onboarding-container" className="min-h-screen bg-[#121212] text-[#F5F5F5] flex items-center justify-center p-4">
+    <div id="onboarding-container" className="min-h-screen bg-black text-stone-300 w-full flex items-center justify-center p-4 overflow-x-hidden">
       <div className="w-full max-w-lg">
-        <div className="flex gap-2 mb-10">
+        <div className="flex gap-1 mb-10">
           {STEPS.map((s, i) => (
             <div
               key={s}
               id={`progress-bar-${s}`}
-              className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                i <= stepIndex ? "bg-[#FF0000]" : "bg-white/10"
+              className={`h-0.5 flex-1 transition-all duration-300 ${
+                i <= stepIndex ? "bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.5)]" : "bg-stone-800"
               }`}
             />
           ))}
@@ -93,21 +94,21 @@ export default function OnboardingPage() {
         {step === "objetivo" && (
           <div id="step-objetivo" className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">¿Qué quieres aprender?</h1>
-              <p className="text-white/50 text-sm">Descríbelo con tus palabras.</p>
+              <h1 className="text-3xl font-light text-white mb-2 tracking-tight">¿Qué quieres aprender?</h1>
+              <p className="text-stone-500 text-sm">Define tu objetivo técnico.</p>
             </div>
 
             <textarea
               id="goal-input"
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-white/30 resize-none h-32 focus:outline-none focus:border-[#FF0000] transition-colors"
-              placeholder="Ej: Quiero aprender a crear aplicaciones web..."
+              className="w-full bg-stone-950 border border-stone-800 rounded-lg p-4 text-stone-100 placeholder-stone-700 resize-none h-32 focus:outline-none focus:border-red-900 transition-colors"
+              placeholder="Ej: Aprender Web3..."
               value={goal}
               onChange={e => setGoal(e.target.value)}
               maxLength={300}
             />
 
-            <div className="flex justify-between items-center text-xs text-white/30">
-              <span id="error-goal-message" className="text-[#FF0000]">{error}</span>
+            <div className="flex justify-between items-center text-xs text-stone-600">
+              <span id="error-goal-message" className="text-red-700">{error}</span>
               <span>{goal.length}/300</span>
             </div>
 
@@ -115,9 +116,9 @@ export default function OnboardingPage() {
               id="btn-goal-next"
               onClick={handleGoalNext}
               disabled={!goal.trim()}
-              className="w-full bg-[#FF0000] hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors"
+              className="w-full bg-stone-900 hover:bg-stone-800 border border-stone-800 disabled:opacity-30 disabled:cursor-not-allowed text-stone-200 font-medium py-3 rounded-lg transition-colors"
             >
-              Continuar →
+              Continuar
             </button>
           </div>
         )}
@@ -125,7 +126,7 @@ export default function OnboardingPage() {
         {step === "nivel" && (
           <div id="step-nivel" className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">¿Cuál es tu nivel?</h1>
+              <h1 className="text-3xl font-light text-white mb-2 tracking-tight">¿Cuál es tu nivel?</h1>
             </div>
 
             <div className="space-y-3">
@@ -134,35 +135,35 @@ export default function OnboardingPage() {
                   key={l.value}
                   id={`btn-level-${l.value}`}
                   onClick={() => setLevel(l.value)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                  className={`w-full text-left p-4 rounded-lg border transition-all ${
                     level === l.value
-                      ? "border-[#FF0000] bg-[#FF0000]/10"
-                      : "border-white/10 bg-white/5 hover:border-white/30"
+                      ? "border-red-900 bg-stone-900"
+                      : "border-stone-800 bg-stone-950 hover:border-stone-700"
                   }`}
                 >
-                  <div className="font-semibold">{l.label}</div>
-                  <div className="text-sm text-white/50 mt-0.5">{l.desc}</div>
+                  <div className="font-medium text-stone-100">{l.label}</div>
+                  <div className="text-sm text-stone-500 mt-0.5">{l.desc}</div>
                 </button>
               ))}
             </div>
 
-            {error && <p id="error-level-message" className="text-[#FF0000] text-sm">{error}</p>}
+            {error && <p id="error-level-message" className="text-red-700 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               <button
                 id="btn-level-back"
                 onClick={() => setStep("objetivo")}
-                className="flex-1 border border-white/10 text-white/70 py-3 rounded-xl hover:border-white/30 transition-colors"
+                className="flex-1 bg-stone-950 border border-stone-800 text-stone-500 py-3 rounded-lg hover:border-stone-700 transition-colors"
               >
-                ← Atrás
+                Atrás
               </button>
               <button
                 id="btn-level-next"
                 onClick={handleLevelNext}
                 disabled={!level}
-                className="flex-1 bg-[#FF0000] hover:bg-red-600 disabled:opacity-30 text-white font-semibold py-3 rounded-xl transition-colors"
+                className="flex-1 bg-stone-900 border border-red-900 text-red-500 font-medium py-3 rounded-lg hover:bg-stone-800 transition-colors"
               >
-                Continuar →
+                Continuar
               </button>
             </div>
           </div>
@@ -171,7 +172,7 @@ export default function OnboardingPage() {
         {step === "tiempo" && (
           <div id="step-tiempo" className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">¿Cuánto tiempo tienes?</h1>
+              <h1 className="text-3xl font-light text-white mb-2 tracking-tight">Capacidad semanal</h1>
             </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -180,10 +181,10 @@ export default function OnboardingPage() {
                   key={h}
                   id={`btn-hours-${h}`}
                   onClick={() => setHours(h)}
-                  className={`py-4 rounded-xl border font-bold text-lg transition-all ${
+                  className={`py-3 rounded-lg border font-medium text-sm transition-all ${
                     hours === h
-                      ? "border-[#FF0000] bg-[#FF0000]/10 text-white"
-                      : "border-white/10 bg-white/5 text-white/50 hover:border-white/30"
+                      ? "border-red-900 bg-stone-900 text-red-500"
+                      : "border-stone-800 bg-stone-950 text-stone-500 hover:border-stone-700"
                   }`}
                 >
                   {h}h
@@ -191,23 +192,27 @@ export default function OnboardingPage() {
               ))}
             </div>
 
-            {error && <p id="error-time-message" className="text-[#FF0000] text-sm">{error}</p>}
+            <div className="bg-stone-950 border border-stone-800 rounded-lg p-4 text-sm text-stone-500">
+              El sistema optimizará el ritmo para <span className="text-stone-300 font-medium">{hours}h/semana</span>.
+            </div>
+
+            {error && <p id="error-time-message" className="text-red-700 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               <button
                 id="btn-time-back"
                 onClick={() => setStep("nivel")}
-                className="flex-1 border border-white/10 text-white/70 py-3 rounded-xl hover:border-white/30 transition-colors"
+                className="flex-1 bg-stone-950 border border-stone-800 text-stone-500 py-3 rounded-lg hover:border-stone-700 transition-colors"
               >
-                ← Atrás
+                Atrás
               </button>
               <button
                 id="btn-submit"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-1 bg-[#FF0000] hover:bg-red-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="flex-1 bg-red-950 border border-red-900 text-red-300 font-semibold py-3 rounded-lg hover:bg-red-900 transition-colors flex items-center justify-center gap-2"
               >
-                {loading ? "Generando..." : "Generar mi currículo →"}
+                {loading ? "Generando..." : "Generar currículo"}
               </button>
             </div>
           </div>
