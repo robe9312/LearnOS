@@ -4,6 +4,13 @@ import { analyzeAndImprove } from '@/lib/ai/self-improvement';
 import { db } from '@/lib/db';
 import { improvements } from '@/src/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { z } from 'zod';
+
+const selfImproveSchema = z.object({
+  content: z.string().min(10).max(10000),
+  context: z.record(z.any()).optional(),
+  mode: z.enum(['improve', 'correct', 'expand', 'simplify']).default('improve')
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,14 +27,16 @@ export async function POST(request: NextRequest) {
 
     // 2. Parsear y validar el body
     const body = await request.json();
-    const { content, context, mode = 'improve' } = body;
+    const validation = selfImproveSchema.safeParse(body);
 
-    if (!content || typeof content !== 'string') {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Content is required and must be a string' },
+        { error: 'Invalid request', details: validation.error.flatten() },
         { status: 400 }
       );
     }
+
+    const { content, context, mode } = validation.data;
 
     // 3. Ejecutar el motor de auto-mejora
     const result = await analyzeAndImprove(userId, content, {
