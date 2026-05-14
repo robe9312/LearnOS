@@ -30,7 +30,7 @@ export default function DashboardPage() {
   )
 
   return (
-    <div id="dashboard-container" className="min-h-screen bg-black text-neutral-300 w-full p-4 sm:p-6 max-w-4xl mx-auto">
+    <div id="dashboard-container" className="min-h-screen w-full p-4 sm:p-6 max-w-4xl mx-auto grid-bg">
       <div className="flex items-center justify-between mb-10 pb-6 border-b border-neutral-800">
         <div>
           <h1 className="text-2xl font-light text-white tracking-tight">Hola, {user?.name ?? "Estudiante"}</h1>
