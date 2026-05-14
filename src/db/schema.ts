@@ -58,3 +58,25 @@ export const userPaths = pgTable('user_paths', {
   progress: jsonb('progress'),
   status: text('status').default('active'),
 });
+
+export const quizzes = pgTable('quizzes', {
+  id: serial('id').primaryKey(),
+  skillNodeId: serial('skill_node_id').references(() => skillNodes.id),
+  difficultyLevel: doublePrecision('difficulty_level').default(0), // 0.0 (easy) to 1.0 (hard)
+});
+
+export const quizQuestions = pgTable('quiz_questions', {
+  id: serial('id').primaryKey(),
+  quizId: serial('quiz_id').references(() => quizzes.id),
+  question: text('question').notNull(),
+  options: jsonb('options').notNull(), // Array of options
+  correctAnswer: jsonb('correct_answer').notNull(), // Or index
+});
+
+export const userQuizAttempts = pgTable('user_quiz_attempts', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  quizId: serial('quiz_id').references(() => quizzes.id),
+  score: doublePrecision('score').notNull(), // 0.0 - 1.0
+  completedAt: timestamp('completed_at').defaultNow(),
+});
