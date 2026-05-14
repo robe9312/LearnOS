@@ -1,20 +1,18 @@
-import { GoogleGenAI } from "@google/genai";
+import { embed } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { db } from "../db";
 import { skillNodes, nodeConnections } from "../../src/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
-const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
-const embeddingModel = "text-embedding-004";
+const google = createGoogleGenerativeAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
+const embeddingModel = google.embedding('text-embedding-004');
 
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const result = await ai.models.embedContent({
+  const { embedding } = await embed({
     model: embeddingModel,
-    contents: [{ parts: [{ text }] }],
+    value: text,
   });
-  // Assuming the structure from the error message
-  // result.embeddings is an object, .values() returns the values
-  const embeddings = result.embeddings as any;
-  return embeddings.values();
+  return embedding;
 }
 
 export async function findNodeBySemanticMatch(title: string, description: string) {

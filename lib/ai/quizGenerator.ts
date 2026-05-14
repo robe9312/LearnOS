@@ -1,26 +1,23 @@
-import { GoogleGenAI } from "@google/genai";
+import { generateText } from 'ai';
+import { createGroq } from '@ai-sdk/groq';
 import { db } from "../db";
 import { quizzes, quizQuestions, userQuizAttempts, nodeMastery } from "../../src/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
-const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY! });
 
 export async function generateQuizForNode(skillNodeId: number, difficulty: number) {
-  // 1. Verificar si existen quizzes existentes para esta dificultad aproximada
-  // 2. Si no, generar con Gemini
-  
   const prompt = `Generate a quiz of 5 questions for skill node ${skillNodeId} with difficulty ${difficulty}.
   Format: JSON { "questions": [{ "question": "...", "options": ["...", "..."], "correctAnswer": 0 }] }`;
   
-  const result = await ai.models.generateContent({ 
-    model: "gemini-2.0-flash",
-    contents: [{ parts: [{ text: prompt }] }] 
+  const { text } = await generateText({
+    model: groq('llama-3.3-70b-versatile'),
+    prompt: prompt,
   });
   
-  const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-  const quizData = JSON.parse(text);
+  const quizData = JSON.parse(text || "{}");
   
-  // 3. Guardar en DB
+  // Guardar en DB
   const [newQuiz] = await db.insert(quizzes).values({ skillNodeId, difficultyLevel: difficulty }).returning();
   
   for (const q of quizData.questions) {
