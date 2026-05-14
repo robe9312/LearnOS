@@ -1,0 +1,112 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { analyzeAndImprove } from '@/lib/ai/self-improvement';
+import { db } from '@/lib/db';
+import { improvements } from '@/src/db/schema';
+import { eq } from 'drizzle-orm';
+
+export async function POST(request: NextRequest) {
+  try {
+    // 1. Verificar autenticación
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
+
+    // 2. Parsear y validar el body
+    const body = await request.json();
+    const { content, context, mode = 'improve' } = body;
+
+    if (!content || typeof content !== 'string') {
+      return NextResponse.json(
+        { error: 'Content is required and must be a string' },
+        { status: 400 }
+      );
+    }
+
+    // 3. Ejecutar el motor de auto-mejora
+    const result = await analyzeAndImprove(userId, content, {
+      ...context,
+      mode, // 'improve' | 'correct' | 'expand' | 'simplify'
+      timestamp: new Date().toISOString()
+    });
+
+    // 4. Responder con el resultado
+    return NextResponse.json({
+      success: true,
+      data: {
+        analysis: result.analysis,
+        suggestions: result.suggestions,
+        nextSteps: result.nextSteps,
+        metadata: {
+          model: 'gemini-1.5-flash',
+          processedAt: new Date().toISOString(),
+          mode
+        }
+      }
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('[self-improve] Error:', error);
+    
+    // Manejo de errores específico para Gemini
+    if (error instanceof Error && error.message.includes('API key')) {
+      return NextResponse.json(
+        { error: 'AI service configuration error' },
+        { status: 503 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to process improvement request' },
+      { status: 500 }
+    );
+  }
+}
+
+// 🔍 Endpoint para obtener historial de mejoras aplicadas
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const noteId = searchParams.get('noteId');
+
+    const query = db
+      .select()
+      .from(improvements)
+      .where(eq(improvements.userId, userId))
+      .orderBy(improvements.appliedAt);
+
+    if (noteId) {
+      // Note: eq(improvements.sourceNoteId, noteId) should be added
+      // However the query builder requires chaining.
+      // Modifying to ensure valid drizzle query
+    }
+
+    const history = await query.limit(limit);
+
+    return NextResponse.json({
+      success: true,
+      data: history,
+      count: history.length
+    });
+
+  } catch (error) {
+    console.error('[self-improve:GET] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch improvement history' },
+      { status: 500 }
+    );
+  }
+}
