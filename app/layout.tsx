@@ -26,9 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
-        <SessionProvider>
+        {/* <SessionProvider> */}
           {children}
-        </SessionProvider>
+        {/* </SessionProvider> */}
       </body>
     </html>
   );

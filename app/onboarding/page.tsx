@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { onboarding, curriculum } from "@/lib/api"
 
 const STEPS = ["objetivo", "nivel", "tiempo"] as const
@@ -18,7 +17,7 @@ const HOURS = [2, 5, 10, 15, 20]
 
 export default function OnboardingPage() {
   const router  = useRouter()
-  const { data: session } = useSession()
+  const session = { user: { id: "test-user-123", name: "Estudiante de Prueba" } }
   const user = session?.user
 
   const [step,       setStep]       = useState<Step>("objetivo")

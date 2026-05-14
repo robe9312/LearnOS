@@ -1,13 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSession } from "next-auth/react"
 import { curriculum, progress } from "@/lib/api"
 import { BookOpen, Clock, ChevronRight, Plus } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
+  const session = { user: { id: "test-user-123", name: "Estudiante de Prueba" } }
   const user = session?.user
   const [curricula,  setCurricula]  = useState<any[]>([])
   const [userProgress, setProgress] = useState<any>(null)
