@@ -1,4 +1,4 @@
-import { pgTable, serial, text, jsonb, timestamp, doublePrecision, primaryKey, customType, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, jsonb, timestamp, doublePrecision, primaryKey, customType, integer, boolean } from 'drizzle-orm/pg-core';
 
 // PostgreSQL vector type placeholder for pgvector
 const vector = customType<{ data: number[] }>({
@@ -113,4 +113,37 @@ export const userQuizAttempts = pgTable('user_quiz_attempts', {
   quizId: serial('quiz_id').references(() => quizzes.id),
   score: doublePrecision('score').notNull(), // 0.0 - 1.0
   completedAt: timestamp('completed_at').defaultNow(),
+});
+
+export const notes = pgTable("notes", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  aiSuggestions: jsonb("ai_suggestions"),
+  improvementScore: integer("improvement_score"),
+  tags: text("tags").array(), 
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  synced: boolean("synced").default(false),
+});
+
+export const learningPatterns = pgTable("learning_patterns", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").references(() => users.id).notNull(),
+  actionType: text("action_type").notNull(),
+  context: jsonb("context"),
+  outcome: text("outcome"),
+  aiFeedback: text("ai_feedback"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const improvements = pgTable("improvements", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").references(() => users.id).notNull(),
+  sourceNoteId: text("source_note_id").references(() => notes.id),
+  originalContent: text("original_content"),
+  improvedContent: text("improved_content"),
+  aiModel: text("ai_model"),
+  appliedAt: timestamp("applied_at").defaultNow(),
 });
