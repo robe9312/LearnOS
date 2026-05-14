@@ -34,7 +34,14 @@ Tu misión es generar un curso completo, estructurado y adaptativo para CUALQUIE
           "id": "slug-unico",
           "title": "...",
           "type": "concept" | "practice" | "checkpoint",
-          "reasoning": "Por qué este recurso es necesario ahora"
+          "reasoning": "Por qué este recurso es necesario ahora",
+          "resources": [
+            {
+              "type": "article" | "video" | "documentation",
+              "title": "...",
+              "url": "..."
+            }
+          ]
         }
       ]
     }

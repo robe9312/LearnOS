@@ -75,6 +75,18 @@ export default function Dashboard() {
       };
       
       setGeneratedPath(formattedData);
+      
+      // Save to database
+      await fetch('/api/curriculum/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: formattedData.name, 
+          content: formattedData, 
+          userId: 'user-123' // Mock userId for now
+        }),
+      });
+
       setTopic('');
     } catch (err: any) {
       console.error("Generation Error:", err);
@@ -219,7 +231,7 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {(displayPath.modules || []).map((m: any) => (
-                <ModuleCard key={m.id || m.week} title={m.title} status={m.status || 'current'} />
+                <ModuleCard key={m.id || m.week} title={m.title} status={m.status || 'current'} alus={m.alus} />
               ))}
             </div>
           </div>
@@ -334,32 +346,47 @@ function SidebarLink({ icon, label, active, onClick }: { icon: React.ReactNode, 
   );
 }
 
-function ModuleCard({ title, status }: { title: string, status: string }) {
+function ModuleCard({ title, status, alus }: { title: string, status: string, alus?: any[] }) {
   const isCompleted = status === 'completed';
   const isCurrent = status === 'current';
   const isLocked = status === 'locked';
 
   return (
     <div className={cn(
-      "p-4 rounded-xl border transition-all flex items-center justify-between group min-w-0",
+      "p-4 rounded-xl border transition-all flex flex-col gap-4 group min-w-0",
       isCompleted && "bg-emerald-500/5 border-emerald-500/20 opacity-80",
       isCurrent && "bg-slate-900 border-sky-500/50 node-active",
       isLocked && "bg-slate-950 border-white/5 opacity-40 grayscale"
     )}>
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center border shrink-0",
-          isCompleted ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-slate-800 border-white/5 text-slate-600",
-          isCurrent && "bg-sky-500 text-white shadow-lg shadow-sky-500/20 border-sky-400"
-        )}>
-          {isCompleted ? <Zap size={14} /> : (isLocked ? <Settings size={14} /> : <BookOpen size={14} />)}
+      <div className="flex items-center justify-between min-w-0 flex-1">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center border shrink-0",
+            isCompleted ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-slate-800 border-white/5 text-slate-600",
+            isCurrent && "bg-sky-500 text-white shadow-lg shadow-sky-500/20 border-sky-400"
+          )}>
+            {isCompleted ? <Zap size={14} /> : (isLocked ? <Settings size={14} /> : <BookOpen size={14} />)}
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[11px] font-bold text-white uppercase tracking-tight truncate">{title}</span>
+            {isCurrent && <span className="text-[8px] text-sky-400 font-mono uppercase tracking-widest truncate">In Progress</span>}
+          </div>
         </div>
-        <div className="flex flex-col min-w-0">
-          <span className="text-[11px] font-bold text-white uppercase tracking-tight truncate">{title}</span>
-          {isCurrent && <span className="text-[8px] text-sky-400 font-mono uppercase tracking-widest truncate">In Progress</span>}
-        </div>
+        {isCompleted && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ml-2 shrink-0"></div>}
       </div>
-      {isCompleted && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ml-2 shrink-0"></div>}
+
+      {alus && alus.length > 0 && (
+        <div className="space-y-2 mt-2">
+          {alus.flatMap((alu: any) => alu.resources || []).length > 0 && (
+            <div className="text-[9px] uppercase font-bold text-slate-500">Recursos Sugeridos</div>
+          )}
+          {alus.flatMap((alu: any) => alu.resources).filter(Boolean).map((res: any, idx: number) => (
+            <a key={idx} href={res.url} target="_blank" rel="noopener noreferrer" className="block text-[10px] text-sky-400 hover:text-sky-300 truncate underline">
+              {res.title} ({res.type})
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
