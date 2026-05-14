@@ -47,7 +47,7 @@ export default function DashboardPage() {
       </div>
 
       {userProgress && (
-        <div id="stats-grid" className="grid grid-cols-3 gap-4 mb-8">
+        <div id="stats-grid" className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div id="stat-completed" className="bg-white/5 rounded-xl p-4 border border-white/10">
             <div className="text-2xl font-bold text-[#FF0000]">{userProgress.completed}</div>
             <div className="text-white/50 text-sm mt-1">Skills completados</div>

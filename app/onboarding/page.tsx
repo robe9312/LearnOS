@@ -174,7 +174,7 @@ export default function OnboardingPage() {
               <h1 className="text-3xl font-bold mb-2">¿Cuánto tiempo tienes?</h1>
             </div>
 
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {HOURS.map(h => (
                 <button
                   key={h}
