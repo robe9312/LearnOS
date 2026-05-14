@@ -1,13 +1,29 @@
-import { pgTable, serial, text, jsonb, timestamp, doublePrecision, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, jsonb, timestamp, doublePrecision, primaryKey, customType } from 'drizzle-orm/pg-core';
+
+// PostgreSQL vector type placeholder for pgvector
+const vector = customType<{ data: number[] }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+});
 
 export const skillNodes = pgTable('skill_nodes', {
   id: serial('id').primaryKey(),
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
   description: text('description'),
-  prerequisites: jsonb('prerequisites'), // Array of slugs
   difficultyScore: doublePrecision('difficulty_score').default(0),
+  embedding: vector('embedding'), // New vector column for embeddings
 });
+
+// Tabla intermedia para definir el grafo (dependencias)
+export const nodeConnections = pgTable('node_connections', {
+  sourceNodeId: serial('source_node_id').references(() => skillNodes.id),
+  targetNodeId: serial('target_node_id').references(() => skillNodes.id),
+  type: text('type').notNull(), // 'prerequisite', 'recommends', 'alternative'
+}, (t) => ({
+  pk: primaryKey({ columns: [t.sourceNodeId, t.targetNodeId] }),
+}));
 
 export const resources = pgTable('resources', {
   id: serial('id').primaryKey(),
@@ -15,21 +31,30 @@ export const resources = pgTable('resources', {
   title: text('title').notNull(),
   url: text('url').notNull(),
   type: text('type').notNull(), // article, video, documentation
-  metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// NUEVO: Seguimiento de maestría (Capas de conocimiento del usuario)
+export const nodeMastery = pgTable('node_mastery', {
+  userId: text('user_id').notNull(),
+  nodeId: serial('node_id').references(() => skillNodes.id),
+  masteryLevel: doublePrecision('mastery_level').default(0), // 0.0 - 1.0
+  lastAssessment: timestamp('last_assessment').defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.nodeId] }),
+}));
 
 export const paths = pgTable('paths', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
-  content: jsonb('content').notNull(), // The generated curriculum structure
+  content: jsonb('content').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const userPaths = pgTable('user_paths', {
   id: serial('id').primaryKey(),
-  userId: text('user_id').notNull(), // Clerk userId
+  userId: text('user_id').notNull(),
   pathId: serial('path_id').references(() => paths.id),
-  progress: jsonb('progress'), // Detailed progress
-  status: text('status').default('active'), // active, completed, abandoned
+  progress: jsonb('progress'),
+  status: text('status').default('active'),
 });
