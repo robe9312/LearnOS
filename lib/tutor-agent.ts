@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { ai } from './ai';
+import { useState, useCallback } from 'react';
+import { groq } from './groq';
+import { Module } from './types';
 
 export interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -9,37 +10,55 @@ export interface Message {
   thought?: string;
 }
 
-export function useTutorAgent() {
+interface TutorContext {
+  courseTitle?: string;
+  curriculum?: Module[];
+}
+
+export function useTutorAgent(context?: TutorContext) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendMessage = async (input: string) => {
+  const sendMessage = useCallback(async (input: string) => {
     if (!input.trim()) return;
 
     const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setLoading(true);
     setError(null);
 
     try {
-      const history = messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-      }));
+      const systemInstruction = `
+        You are LearnOS Tutor, a minimalist cognitive guide for the course "${context?.courseTitle || 'General Knowledge'}".
+        
+        Curriculum Context:
+        ${JSON.stringify(context?.curriculum || [], null, 2)}
 
-      const chat = ai.chats.create({
-        model: "gemini-2.0-flash",
-        config: {
-          systemInstruction: "You are LearnOS Tutor, a minimalist cognitive guide. Help the user build knowledge by asking probing questions and explaining complex concepts simply. Focus on structural understanding and semantic links. Wrap your internal reasoning in <thought> tags.",
-        },
-        history: history as any, // Cast as any if history starts with model or has other type mismatches
+        Guidelines:
+        1. Help the user master the specific goals of the curriculum.
+        2. Ask probing questions to verify structural understanding.
+        3. Explain complex concepts simply using metaphors.
+        4. If the user asks something outside the scope, gently redirect them back to the learning path.
+        5. Wrap your internal reasoning in <thought> tags before responding.
+      `;
+
+      const groqMessages = [
+        { role: 'system', content: systemInstruction },
+        ...updatedMessages.map(m => ({
+          role: m.role as 'user' | 'assistant' | 'system',
+          content: m.content
+        }))
+      ];
+
+      const chatCompletion = await groq.chat.completions.create({
+        messages: groqMessages as any,
+        model: "llama-3.3-70b-versatile",
       });
 
-      const result = await chat.sendMessage({ message: input });
-      const responseText = result.text || "";
+      const responseText = chatCompletion.choices[0]?.message?.content || "";
       
-      // Extract thought if present (though gemini-2.0-flash doesn't natively use <thought> unless instructed)
       const thoughtMatch = responseText.match(/<thought>([\s\S]*?)<\/thought>/);
       const thought = thoughtMatch ? thoughtMatch[1].trim() : "";
       const content = responseText.replace(/<thought>[\s\S]*?<\/thought>/, "").trim();
@@ -57,7 +76,7 @@ export function useTutorAgent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [messages, context]);
 
   return { messages, loading, error, sendMessage };
 }
