@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { groq } from './groq';
-import { Module } from './types';
+import { Course, Module, UserProgress } from './types';
 
 export interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -11,8 +11,8 @@ export interface Message {
 }
 
 interface TutorContext {
-  courseTitle?: string;
-  curriculum?: Module[];
+  course?: Course;
+  progress?: UserProgress | null;
 }
 
 export function useTutorAgent(context?: TutorContext) {
@@ -29,19 +29,29 @@ export function useTutorAgent(context?: TutorContext) {
     setLoading(true);
     setError(null);
 
+    const activeModule = context?.course?.curriculum.find(m => m.id === context?.progress?.currentModuleId);
+    const activeLesson = activeModule?.lessons.find(l => l.id === context?.progress?.currentLessonId);
+
     try {
       const systemInstruction = `
-        You are LearnOS Tutor, a minimalist cognitive guide for the course "${context?.courseTitle || 'General Knowledge'}".
-        
-        Curriculum Context:
-        ${JSON.stringify(context?.curriculum || [], null, 2)}
+        You are LearnOS Tutor, an Adaptive Execution Engine guide.
+        Course: "${context?.course?.title || 'General Knowledge'}"
+        Current Progress:
+        - Module: ${activeModule?.title || 'Unknown'}
+        - Lesson: ${activeLesson?.title || 'Unknown'}
+        - Mastery Score: ${context?.progress?.masteryScore || 0}%
+        - Detected Gaps: ${JSON.stringify(context?.progress?.gapAreas || [])}
 
+        Your Role:
+        1. Be "State-Aware": Know exactly where the user is and what they haven't mastered yet.
+        2. "Gap-Aware": If a user shows confusion in a specific area, focus deeply on that gap.
+        3. "Execution-Oriented": Help them move from current state to "MASTERED".
+        
         Guidelines:
-        1. Help the user master the specific goals of the curriculum.
-        2. Ask probing questions to verify structural understanding.
-        3. Explain complex concepts simply using metaphors.
-        4. If the user asks something outside the scope, gently redirect them back to the learning path.
-        5. Wrap your internal reasoning in <thought> tags before responding.
+        - Use metaphors to simplify complexity.
+        - Verify understanding with probing questions.
+        - If they are "BLOCKED" (many gaps), slow down and simplify.
+        - Wrap your internal reasoning in <thought> tags.
       `;
 
       const groqMessages = [

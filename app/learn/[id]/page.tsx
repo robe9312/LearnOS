@@ -5,21 +5,25 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Send, BookOpen, Sparkles, User, Activity, ChevronLeft, Layout, CheckCircle2 } from 'lucide-react';
 import { useTutorAgent } from '@/lib/tutor-agent';
 import { AIThoughtPanel } from '@/components/AIThoughtPanel';
-import { Course, Module } from '@/lib/types';
+import { Course, Module, UserProgress, ExecutionState } from '@/lib/types';
+import { LearningExecutionEngine } from '@/lib/execution-engine';
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Zap, Target, Brain, AlertCircle } from 'lucide-react';
 
 export default function LearnExecutionPage() {
   const [course, setCourse] = useState<Course | null>(null);
+  const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [executionState, setExecutionState] = useState<ExecutionState>('NOT_STARTED');
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const router = useRouter();
   const params = useParams();
   
   const { messages, loading, error, sendMessage } = useTutorAgent({
-    courseTitle: course?.title,
-    curriculum: course?.curriculum
+    course: course || undefined,
+    progress: progress
   });
   
   const [input, setInput] = useState('');
@@ -27,7 +31,16 @@ export default function LearnExecutionPage() {
   useEffect(() => {
     const saved = localStorage.getItem('current_course');
     if (saved) {
-      setCourse(JSON.parse(saved));
+      const parsedCourse = JSON.parse(saved);
+      setCourse(parsedCourse);
+      
+      // Load progress
+      let currentProgress = LearningExecutionEngine.getProgress(parsedCourse.id);
+      if (!currentProgress) {
+        currentProgress = LearningExecutionEngine.initializeProgress(parsedCourse);
+      }
+      setProgress(currentProgress);
+      setExecutionState(LearningExecutionEngine.getExecutionState(parsedCourse));
     } else {
       router.push('/');
     }
@@ -37,6 +50,11 @@ export default function LearnExecutionPage() {
     if (!course) return null;
     return course.curriculum[activeModuleIndex];
   }, [course, activeModuleIndex]);
+
+  const currentLesson = useMemo(() => {
+    if (!activeModule || !progress) return null;
+    return activeModule.lessons.find(l => l.id === progress.currentLessonId) || activeModule.lessons[0];
+  }, [activeModule, progress]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,11 +85,13 @@ export default function LearnExecutionPage() {
 
           <div className="flex-1 max-w-md mx-8 hidden lg:block">
             <div className="flex justify-between items-end mb-1.5">
-              <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">Global Mastery</span>
-              <span className="text-[10px] font-mono text-accent">12%</span>
+              <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">
+                Execution State: <span className="text-accent">{executionState}</span>
+              </span>
+              <span className="text-[10px] font-mono text-accent">{progress?.masteryScore || 0}%</span>
             </div>
             <div className="h-1 bg-border rounded-full overflow-hidden">
-              <div className="h-full bg-accent transition-all duration-1000" style={{ width: '12%' }} />
+              <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${progress?.masteryScore || 0}%` }} />
             </div>
           </div>
 
@@ -88,9 +108,19 @@ export default function LearnExecutionPage() {
         {/* Left: Navigator */}
         <aside className="w-80 border-r border-border p-8 hidden xl:flex flex-col gap-12 shrink-0">
           <section className="space-y-6">
-            <div className="flex items-center gap-2 text-muted">
-              <Layout className="w-4 h-4" />
-              <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold">Course Navigator</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-muted">
+                <Layout className="w-4 h-4" />
+                <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold">Course Navigator</h2>
+              </div>
+              <span className={cn(
+                "px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest border",
+                executionState === 'BLOCKED' ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                executionState === 'MASTERED' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                "bg-accent/10 text-accent border-accent/20"
+              )}>
+                {executionState}
+              </span>
             </div>
             <div className="space-y-3">
               {course.curriculum.map((mod, idx) => (
@@ -124,14 +154,28 @@ export default function LearnExecutionPage() {
             </div>
           </section>
 
-          <section className="mt-auto p-6 bg-card border border-border rounded-2xl space-y-4">
-            <div className="flex items-center gap-2 text-accent">
-              <Sparkles className="w-4 h-4" />
-              <h4 className="text-[10px] uppercase font-bold tracking-widest">Module Objective</h4>
+          <section className="mt-auto space-y-4">
+            {currentLesson?.pedagogical_reasoning && (
+              <div className="p-6 bg-accent/5 border border-accent/20 rounded-2xl space-y-4">
+                <div className="flex items-center gap-2 text-accent">
+                  <Brain className="w-4 h-4" />
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest">Compiler Reasoning</h4>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed italic">
+                  "{currentLesson.pedagogical_reasoning}"
+                </p>
+              </div>
+            )}
+
+            <div className="p-6 bg-card border border-border rounded-2xl space-y-4">
+              <div className="flex items-center gap-2 text-muted">
+                <Sparkles className="w-4 h-4" />
+                <h4 className="text-[10px] uppercase font-bold tracking-widest">Module Objective</h4>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed italic">
+                "{activeModule?.objective}"
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed italic">
-              "{activeModule?.objective}"
-            </p>
           </section>
         </aside>
 
