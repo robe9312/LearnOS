@@ -18,6 +18,7 @@ export default function LearnExecutionPage() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [executionState, setExecutionState] = useState<ExecutionState>('NOT_STARTED');
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
+  const [isRecompiling, setIsRecompiling] = useState(false);
   const router = useRouter();
   const params = useParams();
   
@@ -25,6 +26,29 @@ export default function LearnExecutionPage() {
     course: course || undefined,
     progress: progress
   });
+
+  const handleRecompile = async () => {
+    if (!course || !progress || progress.gapAreas.length === 0) return;
+    
+    setIsRecompiling(true);
+    try {
+      const { repairCoursePath } = await import('@/lib/course-generator');
+      const updatedCourse = await repairCoursePath(course, progress.gapAreas);
+      localStorage.setItem('current_course', JSON.stringify(updatedCourse));
+      setCourse(updatedCourse);
+      
+      // Clear gaps after repair
+      const updatedProgress = { ...progress, gapAreas: [] };
+      LearningExecutionEngine.saveProgress(updatedProgress);
+      setProgress(updatedProgress);
+      
+      setExecutionState(LearningExecutionEngine.getExecutionState(updatedCourse));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsRecompiling(false);
+    }
+  };
   
   const [input, setInput] = useState('');
 
@@ -48,7 +72,7 @@ export default function LearnExecutionPage() {
 
   const activeModule = useMemo(() => {
     if (!course) return null;
-    return course.curriculum[activeModuleIndex];
+    return course.modules[activeModuleIndex];
   }, [course, activeModuleIndex]);
 
   const currentLesson = useMemo(() => {
@@ -71,15 +95,22 @@ export default function LearnExecutionPage() {
       {/* Header with Progress */}
       <header className="border-b border-border bg-background/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href={`/course/${course.id}`} className="flex items-center gap-2 text-muted hover:text-foreground transition-colors">
-              <ChevronLeft className="w-4 h-4" />
-              <span className="text-xs font-bold tracking-widest uppercase hidden md:inline">Exit to Overview</span>
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
+              <div className="w-8 h-8 bg-foreground rounded flex items-center justify-center">
+                <span className="text-background font-black text-xs">L</span>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden sm:block">LearnOS</span>
+            </Link>
+            <div className="h-4 w-px bg-border" />
+            <Link href={`/course/${course.id}`} className="flex items-center gap-2 text-muted hover:text-foreground transition-colors group">
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="text-[10px] uppercase font-bold tracking-widest hidden sm:block">Course Overview</span>
             </Link>
             <div className="w-px h-4 bg-border" />
             <div className="flex flex-col">
               <span className="text-[9px] uppercase font-bold text-accent tracking-widest">Active Course</span>
-              <span className="text-sm font-medium truncate max-w-[200px]">{course.title}</span>
+              <span className="text-sm font-medium truncate max-w-[150px]">{course.title}</span>
             </div>
           </div>
 
@@ -123,7 +154,7 @@ export default function LearnExecutionPage() {
               </span>
             </div>
             <div className="space-y-3">
-              {course.curriculum.map((mod, idx) => (
+              {course.modules.map((mod, idx) => (
                 <button 
                   key={mod.id}
                   onClick={() => setActiveModuleIndex(idx)}
@@ -170,11 +201,15 @@ export default function LearnExecutionPage() {
             <div className="p-6 bg-card border border-border rounded-2xl space-y-4">
               <div className="flex items-center gap-2 text-muted">
                 <Sparkles className="w-4 h-4" />
-                <h4 className="text-[10px] uppercase font-bold tracking-widest">Module Objective</h4>
+                <h4 className="text-[10px] uppercase font-bold tracking-widest">Module Difficulty</h4>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed italic">
-                "{activeModule?.objective}"
-              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Cognitive Load</span>
+                <span className="text-xs font-mono font-bold text-accent">{activeModule?.difficulty}/10</span>
+              </div>
+              <div className="h-1 bg-border rounded-full overflow-hidden">
+                <div className="h-full bg-accent" style={{ width: `${(activeModule?.difficulty || 0) * 10}%` }} />
+              </div>
             </div>
           </section>
         </aside>
@@ -196,6 +231,31 @@ export default function LearnExecutionPage() {
                   <p className="text-prose text-muted-foreground">
                     I am your cognitive guide for this session. We will start by exploring the foundational concepts of this module. Ask me anything or just say "Start Lesson" to begin.
                   </p>
+
+                  {progress && progress.gapAreas.length > 0 && (
+                    <div className="p-6 border border-red-500/20 bg-red-500/5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="flex items-center gap-4">
+                        <AlertCircle className="w-6 h-6 text-red-500 shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-bold uppercase tracking-widest text-foreground">Cognitive Gaps Detected</h4>
+                          <p className="text-[11px] text-muted-foreground mt-1">Gaps found in: {progress.gapAreas.join(', ')}. The compiler suggests a repair.</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={handleRecompile}
+                        disabled={isRecompiling}
+                        className="px-6 py-2 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                      >
+                        {isRecompiling ? (
+                          <Activity className="w-3 h-3 animate-pulse" />
+                        ) : (
+                          <Zap className="w-3 h-3" />
+                        )}
+                        {isRecompiling ? 'Repairing...' : 'Repair Cognitive Path'}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-3">
                     {['Explain the core idea', 'What are the prerequisites?', 'Start Lesson'].map((s) => (
                       <button 

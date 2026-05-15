@@ -29,7 +29,7 @@ export function useTutorAgent(context?: TutorContext) {
     setLoading(true);
     setError(null);
 
-    const activeModule = context?.course?.curriculum.find(m => m.id === context?.progress?.currentModuleId);
+    const activeModule = context?.course?.modules.find(m => m.id === context?.progress?.currentModuleId);
     const activeLesson = activeModule?.lessons.find(l => l.id === context?.progress?.currentLessonId);
 
     try {

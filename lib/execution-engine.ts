@@ -18,8 +18,8 @@ export class LearningExecutionEngine {
   static initializeProgress(course: Course): UserProgress {
     const progress: UserProgress = {
       courseId: course.id,
-      currentModuleId: course.curriculum[0]?.id || '',
-      currentLessonId: course.curriculum[0]?.lessons[0]?.id || '',
+      currentModuleId: course.modules[0]?.id || '',
+      currentLessonId: course.modules[0]?.lessons[0]?.id || '',
       masteryScore: 0,
       velocity: 0,
       completedLessons: [],
@@ -62,7 +62,7 @@ export class LearningExecutionEngine {
     
     if (progress.completedLessons.length === 0) return 'GENERATED';
     
-    const totalLessons = course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0);
+    const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
     if (progress.completedLessons.length === totalLessons) return 'COMPLETED';
     
     if (progress.gapAreas.length > 2) return 'BLOCKED';

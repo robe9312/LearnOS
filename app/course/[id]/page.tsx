@@ -37,15 +37,21 @@ export default function CourseOverview() {
     <div className="min-h-screen bg-background flex flex-col font-sans">
       <header className="border-b border-border bg-background/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-muted hover:text-foreground transition-colors group">
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-xs font-bold tracking-widest uppercase">New Topic</span>
+          <Link href="/" className="flex items-center gap-6 group">
+            <div className="flex items-center gap-2 group-hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 bg-foreground rounded-lg flex items-center justify-center">
+                <span className="text-background font-black text-xs">L</span>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden sm:block">LearnOS</span>
+            </div>
           </Link>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-accent">
-              <Zap className="w-4 h-4" />
-              <span className="text-[10px] uppercase font-bold tracking-widest">Autonomous Synthesis Ready</span>
-            </div>
+            <button 
+              onClick={() => router.push('/')}
+              className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted hover:text-foreground transition-colors border border-border px-4 py-1.5 rounded-full hover:bg-muted/10"
+            >
+              Generate New System
+            </button>
           </div>
         </div>
       </header>
@@ -56,11 +62,11 @@ export default function CourseOverview() {
           <header className="space-y-6">
             <div className="flex items-center gap-3">
               <span className="px-2 py-0.5 rounded bg-accent/10 text-accent text-[9px] font-bold uppercase tracking-widest border border-accent/20">
-                {course.difficulty}
+                {course.difficulty_model} Engine
               </span>
               <div className="flex items-center gap-1.5 text-muted text-[10px] uppercase font-bold tracking-widest">
                 <Clock className="w-3 h-3" />
-                <span>{course.duration}</span>
+                <span>{course.estimated_duration}h Est.</span>
               </div>
             </div>
             <h1 className="text-5xl font-medium tracking-tight leading-[1.1]">{course.title}</h1>
@@ -70,7 +76,7 @@ export default function CourseOverview() {
           <section className="space-y-8">
             <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted border-b border-border pb-2">Structured Curriculum</h2>
             <div className="space-y-4">
-              {course.curriculum.map((module, i) => (
+              {course.modules.map((module, i) => (
                 <motion.div 
                   key={module.id}
                   initial={{ opacity: 0, x: -10 }}
@@ -83,14 +89,16 @@ export default function CourseOverview() {
                       <span className="text-[10px] font-mono text-accent">MODULE 0{i + 1}</span>
                       <h3 className="text-lg font-medium tracking-tight">{module.title}</h3>
                     </div>
-                    <span className="text-[10px] font-mono text-muted">{module.lessons.length} LESSONS</span>
+                    <span className="text-[10px] font-mono text-muted">{module.lessons.length} LESSONS • LOAD: {module.difficulty}/10</span>
                   </div>
-                  <p className="text-sm text-foreground/70 mb-6 leading-relaxed">{module.description}</p>
                   <div className="space-y-2">
                     {module.lessons.map((lesson) => (
                       <div key={lesson.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/5 transition-colors group/item">
                         <div className="w-1.5 h-1.5 rounded-full bg-border group-hover/item:bg-accent transition-colors" />
-                        <span className="text-xs text-muted-foreground group-hover/item:text-foreground transition-colors">{lesson.title}</span>
+                        <div className="flex items-center justify-between flex-1">
+                          <span className="text-xs text-muted-foreground group-hover/item:text-foreground transition-colors">{lesson.title}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-muted/50">{lesson.type}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -120,18 +128,20 @@ export default function CourseOverview() {
             <section className="space-y-6">
               <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted px-2">Cognitive Stats</h2>
               <div className="grid grid-cols-2 gap-4">
-                <StatCard icon={<Network className="w-4 h-4" />} label="Semantic Nodes" value={course.knowledgeGraph.nodes.length.toString()} />
-                <StatCard icon={<BarChart3 className="w-4 h-4" />} label="Avg Complexity" value="Med" />
+                <StatCard icon={<Network className="w-4 h-4" />} label="Exec Modules" value={course.modules.length.toString()} />
+                <StatCard icon={<BarChart3 className="w-4 h-4" />} label="Strategy" value={course.assessment_strategy.type} />
               </div>
             </section>
 
             <section className="space-y-6">
-              <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted px-2">Knowledge Graph Highlights</h2>
-              <div className="flex flex-wrap gap-2">
-                {course.knowledgeGraph.nodes.map((node) => (
-                  <span key={node.id} className="px-3 py-1 bg-muted/10 border border-border rounded-full text-[10px] text-muted-foreground font-mono">
-                    {node.label}
-                  </span>
+              <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted px-2">Dependency Graph</h2>
+              <div className="space-y-3">
+                {course.dependency_graph.map((edge, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-2 border border-border bg-card rounded-xl">
+                    <span className="text-[10px] font-mono text-accent">{edge.from}</span>
+                    <ChevronRight className="w-3 h-3 text-muted" />
+                    <span className="text-[10px] font-mono text-foreground">{edge.to}</span>
+                  </div>
                 ))}
               </div>
             </section>
