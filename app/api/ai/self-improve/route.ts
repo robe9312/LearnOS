@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 const selfImproveSchema = z.object({
   content: z.string().min(10).max(10000),
-  context: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.any()).optional(),
   mode: z.enum(['improve', 'correct', 'expand', 'simplify']).default('improve')
 });
 
