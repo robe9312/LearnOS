@@ -48,9 +48,10 @@ export default function CourseOverview() {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => router.push('/')}
-              className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted hover:text-foreground transition-colors border border-border px-4 py-1.5 rounded-full hover:bg-muted/10"
+              className="group flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.2em] text-muted hover:text-foreground transition-colors border border-border px-4 py-1.5 rounded-full hover:bg-muted/10 font-mono"
             >
-              Generate New System
+              <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+              <span>Back to Home</span>
             </button>
           </div>
         </div>
