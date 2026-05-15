@@ -41,7 +41,10 @@ class EventBus {
     const handlers = this.handlers.get(event.type) || [];
     // Ejecución asíncrona para no bloquear el hilo principal del runtime
     handlers.forEach(h => {
-      h(event).catch(err => console.error(`[EventBus Error] in handler for ${event.type}:`, err));
+      const result = h(event);
+      if (result instanceof Promise) {
+        result.catch(err => console.error(`[EventBus Error] in handler for ${event.type}:`, err));
+      }
     });
   }
 

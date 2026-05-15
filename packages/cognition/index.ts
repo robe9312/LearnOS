@@ -10,18 +10,19 @@ export class CognitionRuntime {
 
   private setupListeners() {
     // Escuchar cuando se completa un Quiz
-    eventBus.on('QUIZ_COMPLETED', async (event) => {
-      console.log(`[Cognition] Reaccionando a Quiz completado por ${event.payload.userId}`);
+    eventBus.on('QUIZ_COMPLETED', async (event: any) => {
+      const payload = event.payload;
+      console.log(`[Cognition] Reaccionando a Quiz completado por ${payload.userId}`);
       
       // Lógica reactiva: Si el score es > 0.8, buscar siguientes pasos
-      if (event.payload.score > 0.8) {
+      if (payload.score > 0.8) {
         await eventBus.emit({
           type: 'AGENT_ACTION_REQUESTED',
           payload: {
-            userId: event.payload.userId,
+            userId: payload.userId,
             agentId: 'tutor-prime',
             action: 'CONGRATULATE_AND_PROPOSE_NEXT',
-            context: { nodeId: event.payload.nodeId }
+            context: { nodeId: payload.nodeId }
           },
           meta: eventBus.createMeta(EventPriority.MEDIUM)
         });
@@ -29,13 +30,14 @@ export class CognitionRuntime {
     });
 
     // Escuchar actualizaciones de maestría para recalcular el path si es necesario
-    eventBus.on('MASTERY_UPDATED', async (event) => {
-      if (event.payload.level < 0.3) {
+    eventBus.on('MASTERY_UPDATED', async (event: any) => {
+      const payload = event.payload;
+      if (payload.level < 0.3) {
         await eventBus.emit({
           type: 'KNOWLEDGE_GAP_DETECTED',
           payload: { 
-            userId: event.payload.userId, 
-            nodeId: event.payload.nodeId,
+            userId: payload.userId, 
+            nodeId: payload.nodeId,
             missingPrerequisites: ['Fundamental concepts reinforcement needed'] 
           },
           meta: eventBus.createMeta(EventPriority.HIGH)
@@ -54,7 +56,10 @@ export class CognitionRuntime {
 
   async checkNextStep(userId: string, targetNodeId: number, currentMastery: MasteryRecord[], connections: NodeConnection[]) {
     const gaps = await graphEngine.findGaps(
-      currentMastery.map(m => ({ nodeId: m.nodeId, level: m.masteryLevel })),
+      currentMastery.map(m => ({ 
+        nodeId: typeof m.nodeId === 'string' ? parseInt(m.nodeId) : m.nodeId, 
+        level: m.state.conceptualUnderstanding // Use aggregate or conceptual for gap analysis
+      })),
       targetNodeId,
       connections
     );

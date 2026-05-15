@@ -1,30 +1,82 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@theme {
+  --color-brand-cyan: #00f2ff;
+  --color-brand-violet: #8b5cf6;
+  --color-brand-blue: #3b82f6;
+  --color-os-bg: #020617;
+}
+
 :root {
-  --background: 0 0% 0%; /* Negro puro */
-  --foreground: 0 0% 90%; 
-  --accent: 180 100% 50%; /* Cyan tech */
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card-bg: rgba(15, 23, 42, 0.6);
+  --border-glow: rgba(0, 242, 255, 0.2);
 }
 
-.grid-bg {
-  background-image: radial-gradient(rgba(0, 242, 255, 0.15) 1px, transparent 1px);
-  background-size: 32px 32px;
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
 }
 
-.glass {
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* Cinematic Utilities */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
 
-.node-active {
-  box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
+.glow-border {
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
 }
 
-@layer base {
-  body {
-    @apply bg-black text-slate-200 overflow-x-hidden;
-  }
+.glow-text-cyan {
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+}
+
+.glow-text-violet {
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.os-grid {
+  background-image: 
+    linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.os-scanline {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, rgba(0, 242, 255, 0.2), transparent);
+  position: absolute;
+  top: 0;
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanline {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

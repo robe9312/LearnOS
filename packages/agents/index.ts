@@ -28,11 +28,17 @@ export class TutorAgent {
     const recentMemory = await memoryStore.recallContext(userId, node?.title || '');
     const prerequisites = await graphEngine.getPrerequisites(parseInt(nodeId), connections);
     
+    // Convert multidimensional to aggregate for simple prompt context
+    const userMasteryRecord = mastery.find(m => m.nodeId.toString() === nodeId);
+    const aggregateMastery = userMasteryRecord 
+      ? (userMasteryRecord.state.conceptualUnderstanding * 0.4 + userMasteryRecord.state.proceduralFluency * 0.6)
+      : 0;
+    
     return {
       node,
       recentMemory,
       prerequisites: prerequisites.map(id => nodes.find(n => n.id === id)),
-      userMastery: mastery.find(m => m.nodeId.toString() === nodeId)?.masteryLevel || 0
+      userMastery: aggregateMastery
     };
   }
 
