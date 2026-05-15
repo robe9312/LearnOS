@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { ai } from './ai';
-import { GenerateContentResponse } from '@google/genai';
 
 export interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -24,24 +23,31 @@ export function useTutorAgent() {
     setError(null);
 
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: [
-          ...messages.map(m => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: m.content }]
-          })),
-          { role: 'user', parts: [{ text: input }] }
-        ],
+      const history = messages.map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }]
+      }));
+
+      const chat = ai.chats.create({
+        model: "gemini-2.0-flash",
         config: {
-          systemInstruction: "You are LearnOS Tutor, a minimalist cognitive guide. Help the user build knowledge by asking probing questions and explaining complex concepts simply. Focus on structural understanding and semantic links.",
-        }
+          systemInstruction: "You are LearnOS Tutor, a minimalist cognitive guide. Help the user build knowledge by asking probing questions and explaining complex concepts simply. Focus on structural understanding and semantic links. Wrap your internal reasoning in <thought> tags.",
+        },
+        history: history as any, // Cast as any if history starts with model or has other type mismatches
       });
+
+      const result = await chat.sendMessage({ message: input });
+      const responseText = result.text || "";
+      
+      // Extract thought if present (though gemini-2.0-flash doesn't natively use <thought> unless instructed)
+      const thoughtMatch = responseText.match(/<thought>([\s\S]*?)<\/thought>/);
+      const thought = thoughtMatch ? thoughtMatch[1].trim() : "";
+      const content = responseText.replace(/<thought>[\s\S]*?<\/thought>/, "").trim();
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.text || "I'm sorry, I couldn't generate a response.",
-        thought: response.candidates?.[0]?.content?.parts?.find(p => p.thought)?.text || ""
+        content: content || "I'm sorry, I couldn't generate a response.",
+        thought: thought
       };
 
       setMessages(prev => [...prev, assistantMessage]);

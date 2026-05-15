@@ -1,33 +1,33 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   
-  --color-background: #ffffff;
-  --color-foreground: #111111;
-  --color-accent: #2563eb;
-  --color-muted: #6b7280;
-  --color-muted-foreground: #9ca3af;
-  --color-border: #e5e7eb;
-  --color-card: #f9fafb;
+  --background: #ffffff;
+  --foreground: #111111;
+  --accent: #2563eb;
+  --muted: #6b7280;
+  --muted-foreground: #9ca3af;
+  --border: #e5e7eb;
+  --card: #f9fafb;
 }
 
-@layer base {
-  html.dark {
-    --color-background: #000000;
-    --color-foreground: #f3f4f6;
-    --color-accent: #3b82f6;
-    --color-muted: #9ca3af;
-    --color-muted-foreground: #6b7280;
-    --color-border: #1f2937;
-    --color-card: #111827;
-  }
+.dark {
+  --background: #000000;
+  --foreground: #f3f4f6;
+  --accent: #3b82f6;
+  --muted: #9ca3af;
+  --muted-foreground: #6b7280;
+  --border: #1f2937;
+  --card: #111827;
+}
 
-  body {
-    @apply bg-background text-foreground antialiased selection:bg-accent/20 selection:text-accent;
-    font-feature-settings: "ss01", "ss03", "cv01", "cv11";
-  }
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -37,17 +37,33 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
+  background: var(--border);
+  border-radius: 9999px;
 }
 
 .cognitive-workspace {
-  @apply max-w-2xl mx-auto py-12 px-6;
+  max-width: 42rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 .text-prose {
-  @apply text-lg leading-relaxed text-foreground/90;
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: rgba(var(--foreground), 0.9);
 }
 
 .command-input {
-  @apply w-full bg-transparent border-none outline-none text-xl font-medium placeholder:text-muted/50 py-4;
+  width: 100%;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  font-size: 1.25rem;
+  font-weight: 500;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }

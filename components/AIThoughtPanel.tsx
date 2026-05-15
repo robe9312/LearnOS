@@ -11,9 +11,9 @@ export function AIThoughtPanel({ thought }: { thought?: string }) {
   if (!thought) return null;
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-4 px-6">
+    <div className="w-full max-w-2xl mx-auto mt-4 px-6 border-l-2 border-accent/20">
       <div className={cn(
-        "border border-border rounded-lg bg-card/50 transition-all overflow-hidden",
+        "bg-card/30 transition-all overflow-hidden",
         isExpanded ? "p-4" : "p-2"
       )}>
         <button 

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Command, 
-  Search, 
   Sparkles, 
   BookOpen, 
   Activity, 
@@ -15,6 +14,7 @@ import {
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 // --- Components ---
 
@@ -256,6 +256,11 @@ const MOCK_CONTEXT = {
 export default function CognitiveIDE() {
   const [workspace, setWorkspace] = useState(MOCK_WORKSPACE);
   const [isContextOpen, setIsContextOpen] = useState(false);
+  const [recentSyntheses, setRecentSyntheses] = useState([
+    { id: '1', title: 'Distributed Systems Architecture', category: 'SYSTEMS', date: '2h ago' },
+    { id: '2', title: 'Neural Path Optimization', category: 'COGNITION', date: '5h ago' },
+    { id: '3', title: 'Quantum Entanglement Basics', category: 'PHYSICS', date: 'Yesterday' }
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -269,40 +274,57 @@ export default function CognitiveIDE() {
   }, []);
 
   const handleCommand = (cmd: string) => {
-    // Simulated command handling
-    console.log('Command received:', cmd);
     if (cmd.toLowerCase().includes('learn') || cmd.toLowerCase().includes('explain')) {
       window.location.href = `/learn?q=${encodeURIComponent(cmd)}`;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background selection:bg-accent/10 selection:text-accent font-sans">
+    <div className="min-h-screen bg-background selection:bg-accent/10 selection:text-accent font-sans flex flex-col">
       <CommandBar onCommand={handleCommand} />
       
-      <main className="relative flex flex-col items-center">
-        <div className="w-full max-w-4xl px-6 py-4 flex justify-end gap-6 text-[10px] font-bold uppercase tracking-widest text-muted">
-          <a href="/learn" className="hover:text-accent transition-colors flex items-center gap-2">
-            <BookOpen className="w-3 h-3" /> Start Learning
-          </a>
-          <button onClick={() => setIsContextOpen(true)} className="hover:text-accent transition-colors flex items-center gap-2">
-            <Activity className="w-3 h-3" /> Context Inspector
-          </button>
+      <main className="flex-1 relative flex flex-col md:flex-row max-w-[1400px] mx-auto w-full px-6 gap-12 py-12">
+        {/* Left column: Directory/Recent */}
+        <aside className="w-full md:w-64 shrink-0 space-y-12">
+          <section className="space-y-6">
+            <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted">Recent Syntheses</h2>
+            <div className="space-y-2">
+              {recentSyntheses.map((item) => (
+                <div key={item.id} className="group cursor-pointer p-3 rounded-lg border border-transparent hover:border-border hover:bg-card transition-all">
+                  <div className="text-[9px] font-mono text-accent mb-1 tracking-widest">{item.category}</div>
+                  <h3 className="text-xs font-medium truncate">{item.title}</h3>
+                  <div className="text-[9px] text-muted mt-2">{item.date}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <h2 className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted">Cognitive Index</h2>
+            <div className="space-y-1">
+              {['Foundations', 'Advanced Theory', 'Syntheses', 'Archives'].map((folder) => (
+                <div key={folder} className="flex items-center gap-2 p-2 text-xs text-muted hover:text-foreground cursor-pointer transition-colors">
+                  <ChevronRight className="w-3 h-3" />
+                  {folder}
+                </div>
+              ))}
+            </div>
+          </section>
+        </aside>
+
+        {/* Center column: Workspace */}
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-end gap-6 text-[10px] font-bold uppercase tracking-widest text-muted mb-8">
+            <Link href="/learn" className="hover:text-accent transition-colors flex items-center gap-2">
+              <BookOpen className="w-3 h-3" /> Start Learning
+            </Link>
+            <button onClick={() => setIsContextOpen(true)} className="hover:text-accent transition-colors flex items-center gap-2">
+              <Activity className="w-3 h-3" /> Context Inspector
+            </button>
+          </div>
+          
+          <CognitiveWorkspace content={workspace} />
         </div>
-        
-        <CognitiveWorkspace content={workspace} />
-        
-        {/* Floating Toggle for Context (Mobile-friendly access) */}
-        {!isContextOpen && (
-          <motion.button 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={() => setIsContextOpen(true)}
-            className="fixed bottom-8 right-8 p-4 bg-background border border-border rounded-full shadow-lg hover:border-accent hover:text-accent transition-all z-40 group"
-          >
-            <Activity className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </motion.button>
-        )}
       </main>
 
       <ContextPanel 
@@ -310,6 +332,18 @@ export default function CognitiveIDE() {
         onClose={() => setIsContextOpen(false)} 
         context={MOCK_CONTEXT} 
       />
+
+      {/* Floating Toggle for Context (Mobile-friendly access) */}
+      {!isContextOpen && (
+        <motion.button 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={() => setIsContextOpen(true)}
+          className="fixed bottom-8 right-8 p-4 bg-background border border-border rounded-full shadow-lg hover:border-accent hover:text-accent transition-all z-40 group md:hidden"
+        >
+          <Activity className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        </motion.button>
+      )}
 
       {/* Background decoration */}
       <div className="fixed inset-0 pointer-events-none z-[-1] opacity-[0.03]" 
