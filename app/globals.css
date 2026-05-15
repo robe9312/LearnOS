@@ -4,18 +4,28 @@
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   
-  --color-background: #000000;
-  --color-foreground: #ffffff;
-  --color-accent: #3b82f6;
-  --color-muted: #737373;
-  --color-muted-foreground: #a3a3a3;
-  --color-border: #222222;
-  --color-card: #111111;
+  --color-background: #ffffff;
+  --color-foreground: #111111;
+  --color-accent: #2563eb;
+  --color-muted: #6b7280;
+  --color-muted-foreground: #9ca3af;
+  --color-border: #e5e7eb;
+  --color-card: #f9fafb;
 }
 
 @layer base {
+  html.dark {
+    --color-background: #000000;
+    --color-foreground: #f3f4f6;
+    --color-accent: #3b82f6;
+    --color-muted: #9ca3af;
+    --color-muted-foreground: #6b7280;
+    --color-border: #1f2937;
+    --color-card: #111827;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased selection:bg-accent selection:text-white;
+    @apply bg-background text-foreground antialiased selection:bg-accent/20 selection:text-accent;
     font-feature-settings: "ss01", "ss03", "cv01", "cv11";
   }
 }
@@ -30,14 +40,14 @@
   @apply bg-border rounded-full;
 }
 
-.document-view {
-  @apply max-w-2xl mx-auto py-24 px-6 space-y-8;
+.cognitive-workspace {
+  @apply max-w-2xl mx-auto py-12 px-6;
 }
 
-.text-subtle {
-  @apply text-muted leading-relaxed;
+.text-prose {
+  @apply text-lg leading-relaxed text-foreground/90;
 }
 
-.interactive-minimal {
-  @apply transition-colors hover:text-accent cursor-pointer;
+.command-input {
+  @apply w-full bg-transparent border-none outline-none text-xl font-medium placeholder:text-muted/50 py-4;
 }
