@@ -19,18 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "@learnos/ontology": ["./packages/ontology"],
-      "@learnos/ai-provider": ["./packages/ai-provider"],
-      "@learnos/events": ["./packages/events"],
-      "@learnos/graph-engine": ["./packages/graph-engine"],
-      "@learnos/cognition": ["./packages/cognition"],
-      "@learnos/assessment": ["./packages/assessment"],
-      "@learnos/pedagogy": ["./packages/pedagogy"],
-      "@learnos/memory": ["./packages/memory"],
-      "@learnos/agents": ["./packages/agents"],
-      "@learnos/mastery": ["./packages/mastery"],
-      "@learnos/narrative": ["./packages/narrative"]
+      "@/*": ["./*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

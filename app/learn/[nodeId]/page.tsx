@@ -1,173 +1,103 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Cpu, 
-  Terminal, 
-  ChevronRight, 
-  Sparkles,
-  RefreshCcw,
-  BookOpen,
-  Zap,
-  Info,
-  Brain
-} from 'lucide-react';
-import { GlassPanel } from '@/components/ui/glass-panel';
+import { motion } from 'motion/react';
+import { Send, ChevronLeft, Sparkles, BookOpen } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useState, use } from 'react';
 
-export default function LearningSession() {
-  const params = useParams();
-  const nodeId = params.nodeId;
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Identificando contexto cognitivo... Nodo activo: Sistemas Event-Driven. ¿Quieres profundizar en la diferencia entre acoplamiento temporal y espacial?', type: 'tutor' }
-  ]);
+const initialMessages = [
+  {
+    role: 'system',
+    content: 'Module: QUANTUM_COMPUTING Status: ACTIVE Objectives: Understand qubits and superposition.'
+  },
+  {
+    role: 'assistant',
+    content: "We're beginning your exploration of Quantum Computing. At its most fundamental level, we are moving away from the binary certainty of bits into the probabilistic richness of qubits.\n\nHow would you like to start? We can analyze the physical implementation of a qubit, or dive straight into the mathematical concept of Superposition."
+  }
+];
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    setMessages(prev => [...prev, { role: 'user', content: input, type: 'user' }]);
-    setInput('');
-    // Mock response
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Excelente pregunta. El acoplamiento espacial se refiere a conocer la ubicación del receptor. En sistemas de eventos, esto se rompe mediante el Event Bus.', type: 'tutor' }]);
-    }, 1000);
-  };
+export default function LearnChat({ params }: { params: Promise<{ nodeId: string }> }) {
+  const { nodeId } = use(params);
+  const [messages, setMessages] = useState(initialMessages);
 
   return (
-    <div className="h-[calc(100vh-120px)] flex gap-6 overflow-hidden">
-      {/* Left side: Context & Workspace */}
-      <div className="flex-1 flex flex-col gap-6">
-        <GlassPanel className="h-full bg-os-bg/60 border-brand-cyan/20 flex flex-col">
-          <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-brand-cyan/10 rounded-lg text-brand-cyan">
-                <Cpu className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="font-bold text-lg uppercase tracking-tight">Cognitive Session</h2>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="flex items-center gap-1 font-mono uppercase tracking-tighter">
-                    <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" /> Live Session
-                  </span>
-                  <span>|</span>
-                  <span className="font-mono">Node ID: {nodeId}</span>
+    <div className="max-w-4xl mx-auto h-[calc(100vh-3.5rem)] flex flex-col pt-12">
+      <header className="px-6 pb-8 border-b border-border flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-accent">
+            <BookOpen className="w-4 h-4" />
+            <span className="text-[10px] uppercase tracking-widest font-bold">Module Explorer</span>
+          </div>
+          <h1 className="text-3xl font-medium tracking-tight">Quantum Foundations</h1>
+        </div>
+        <button className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted hover:text-foreground transition-colors">
+          <ChevronLeft className="w-4 h-4" /> Back to Graph
+        </button>
+      </header>
+
+      <main className="flex-1 overflow-y-auto px-6 py-12 space-y-12 custom-scrollbar">
+        {messages.map((msg, i) => (
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "flex gap-8",
+              msg.role === 'system' ? "bg-card p-4 border border-border rounded-md italic" : ""
+            )}
+          >
+            <div className="w-12 shrink-0 pt-1">
+              {msg.role === 'assistant' ? (
+                <div className="w-8 h-8 rounded-full border border-accent/20 flex items-center justify-center text-accent">
+                  <Sparkles className="w-4 h-4" />
                 </div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button className="glass-panel p-2 hover:bg-white/10 transition-colors">
-                <RefreshCcw className="w-4 h-4 text-slate-500" />
-              </button>
-              <button className="bg-brand-cyan/20 hover:bg-brand-cyan/30 text-brand-cyan px-4 py-1.5 rounded-lg text-xs font-bold transition-all uppercase tracking-widest">
-                Finalizar
-              </button>
-            </div>
-          </div>
-
-          {/* Interactive Workspace Area */}
-          <div className="flex-1 relative rounded-xl bg-black/40 border border-white/5 p-8 flex items-center justify-center">
-            <div className="absolute inset-0 os-grid opacity-20" />
-            <div className="text-center max-w-lg relative z-10">
-              <Brain className="w-16 h-16 text-brand-cyan mx-auto mb-6 opacity-40" />
-              <h3 className="text-xl font-bold mb-4">Área de Trabajo Conceptual</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Aquí es donde se visualizan los modelos mentales, diagramas de flujo y desafíos generados dinámicamente por LearnOS.
-              </p>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <GlassPanel className="p-3 text-left bg-slate-900/50">
-                  <div className="text-[10px] text-brand-cyan uppercase font-bold mb-1">Concepto Base</div>
-                  <div className="text-sm">Inmutabilidad</div>
-                </GlassPanel>
-                <GlassPanel className="p-3 text-left bg-slate-900/50">
-                  <div className="text-[10px] text-brand-violet uppercase font-bold mb-1">Próxima Señal</div>
-                  <div className="text-sm">Propagación</div>
-                </GlassPanel>
-              </div>
-            </div>
-          </div>
-        </GlassPanel>
-      </div>
-
-      {/* Right side: Tutor Agent Cinematic Panel */}
-      <div className="w-96 flex flex-col gap-6">
-        <GlassPanel glow className="flex-1 flex flex-col min-h-0 bg-slate-900/80">
-          <div className="flex items-center gap-3 mb-6 p-2 border-b border-white/5">
-            <div className="relative">
-               <Sparkles className="w-6 h-6 text-brand-cyan animate-pulse" />
-               <div className="absolute inset-0 bg-brand-cyan/20 blur-lg" />
-            </div>
-            <div>
-              <h3 className="font-bold text-xs uppercase tracking-widest text-slate-300">Tutor Prime</h3>
-              <p className="text-[9px] text-slate-500 font-mono italic">Cognition Orchestrator v4.0</p>
-            </div>
-          </div>
-
-          {/* Message Stream */}
-          <div className="flex-1 overflow-y-auto space-y-6 px-2 custom-scrollbar">
-            {messages.map((msg, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, x: msg.type === 'user' ? 20 : -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={cn(
-                  "flex flex-col gap-2",
-                  msg.type === 'user' ? "items-end text-right" : "items-start"
-                )}
-              >
-                <div className={cn(
-                  "max-w-[90%] p-4 rounded-xl text-sm leading-relaxed",
-                  msg.type === 'user' ? "bg-brand-violet/20 border border-brand-violet/30 text-white" : "glass-panel bg-brand-cyan/5 text-slate-200"
-                )}>
-                  {msg.content}
+              ) : msg.role === 'system' ? (
+                <span className="text-[10px] font-mono font-bold text-muted uppercase">SYS</span>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center text-muted font-bold text-[10px]">
+                  YOU
                 </div>
-                <span className="text-[8px] uppercase tracking-widest text-slate-600 font-bold px-1">
-                  {msg.type === 'user' ? 'Respuesta enviada' : 'Análisis cognitivo'}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Reasoning / Thought Panel (Small) */}
-          <div className="mt-6 mb-4">
-             <div className="p-3 bg-brand-cyan/5 rounded-lg border border-brand-cyan/10">
-                <div className="flex items-center gap-2 mb-2">
-                   <Terminal className="w-3 h-3 text-brand-cyan" />
-                   <span className="text-[9px] uppercase font-bold text-brand-cyan tracking-widest">Reasoning Tracer</span>
+              )}
+            </div>
+            
+            <div className="flex-1 space-y-4">
+              <div className="text-lg leading-relaxed whitespace-pre-wrap text-foreground/90 font-light">
+                {msg.content}
+              </div>
+              {msg.role === 'assistant' && i === messages.length - 1 && (
+                <div className="flex flex-wrap gap-3 pt-4">
+                  <Chip label="Define Superposition" />
+                  <Chip label="Architecture of Qubits" />
+                  <Chip label="Historical Context" />
                 </div>
-                <p className="text-[10px] text-slate-500 italic leading-tight">
-                   "Detectada debilidad en el concepto de desacoplamiento temporal. Iniciando estrategia de analogía espacial..."
-                </p>
-             </div>
-          </div>
+              )}
+            </div>
+          </motion.div>
+        ))}
+      </main>
 
-          {/* Input Area */}
-          <div className="relative mt-auto">
-            <input 
-              type="text" 
-              placeholder="Escribe tu reflexión..."
-              className="w-full bg-os-bg/80 border border-white/10 rounded-xl py-4 pl-4 pr-12 text-sm focus:outline-none focus:border-brand-cyan/50 transition-all font-mono"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            />
-            <button 
-              onClick={handleSend}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-brand-cyan text-os-bg hover:bg-brand-cyan/80 transition-all"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="mt-2 flex justify-between px-1">
-             <span className="text-[8px] text-slate-600 uppercase font-mono tracking-tighter italic">Modo: Socrático Adaptativo</span>
-             <Info className="w-3 h-3 text-slate-700 cursor-help" />
-          </div>
-        </GlassPanel>
-      </div>
+      <footer className="p-8 pb-12">
+        <div className="relative max-w-2xl mx-auto">
+          <textarea 
+            placeholder="Type your cognitive synthesis..."
+            className="w-full bg-card border border-border rounded-xl p-4 pr-12 text-base leading-relaxed focus:outline-none focus:border-accent min-h-[100px] resize-none transition-all placeholder:text-muted"
+          ></textarea>
+          <button className="absolute bottom-4 right-4 p-2 text-accent hover:text-accent-foreground transition-colors">
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-center mt-4 text-[10px] text-muted font-mono uppercase tracking-widest">
+          Continuous Interaction Active • Low Latency Mode
+        </p>
+      </footer>
     </div>
   );
 }
 
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
+function Chip({ label }: { label: string }) {
+  return (
+    <button className="px-3 py-1.5 border border-border rounded-full text-xs font-medium text-muted hover:border-accent hover:text-accent transition-all">
+      {label}
+    </button>
+  );
 }

@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: "LearnOS | Cognitive Command Center",
-  description: "A cognitive operating system for adaptive learning.",
+  title: "LearnOS",
+  description: "Minimal Cognitive Environment",
 };
 
 export default function RootLayout({
@@ -25,19 +25,44 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased os-grid min-h-screen relative`}>
-        <div className="os-scanline" />
-        
-        {/* Global Atmosphere */}
-        <div className="absolute inset-0 bg-radial-gradient from-brand-cyan/5 via-transparent to-transparent pointer-events-none" />
-        
-        <div className="flex h-screen overflow-hidden relative z-10">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto p-6 relative">
+      <body className={cn(inter.variable, mono.variable, "font-sans min-h-screen")}>
+        <div className="flex flex-col min-h-screen">
+          <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-sm">
+            <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <a href="/" className="text-sm font-bold tracking-tight hover:text-accent transition-colors">
+                  LEARNOS
+                </a>
+                <nav className="hidden md:flex items-center gap-6">
+                  <NavLink href="/explore" label="Explore" />
+                  <NavLink href="/journey" label="Journey" />
+                  <NavLink href="/system" label="System" />
+                  <NavLink href="/timeline" label="Timeline" />
+                </nav>
+              </div>
+              <div className="flex items-center gap-4">
+                <button className="text-[10px] font-mono text-muted uppercase tracking-widest border border-border px-2 py-0.5 rounded hover:border-accent hover:text-accent transition-colors">
+                  v1.2.0
+                </button>
+              </div>
+            </div>
+          </header>
+          <main className="flex-1">
             {children}
           </main>
         </div>
       </body>
     </html>
+  );
+}
+
+function NavLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a 
+      href={href} 
+      className="text-xs uppercase tracking-widest text-muted hover:text-foreground transition-colors font-medium"
+    >
+      {label}
+    </a>
   );
 }
